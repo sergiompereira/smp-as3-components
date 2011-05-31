@@ -150,8 +150,10 @@ package com.smp.components{
 		}
 		
 		
-		public function addItem(obj:*):void {
+	
+		public function addItem(obj:DisplayObject):void {
 			
+			obj.x = obj.y = 0;
 			_objectCollection.push(obj);
 			_totalImgs = _objectCollection.length;
 		}
