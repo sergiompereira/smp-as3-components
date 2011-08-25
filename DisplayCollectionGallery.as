@@ -19,8 +19,7 @@ package com.smp.components{
 	
 	
 	import com.smp.effects.TweenSafe;
-	
-	import ascb.util.DisplayObjectUtilities;
+	import com.smp.common.display.DisplayObjectUtilities;
 
 	/**
 	 * Allows to show an horizontal or vertical sequence, or a cross fade, of a collection of display objects.
