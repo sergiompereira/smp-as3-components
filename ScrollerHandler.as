@@ -1,9 +1,10 @@
 package com.smp.components{
 
 	
-	/*
+	/**
 	 * Accepts o movieClip (composite)
 	 * Allows to manage different movieClips/scrollers with the same class (but not the same instance);
+	 * Dependencies: GTween (http://gskinner.com/libraries/gtween)
 	 * 
 	 */
 	
@@ -17,7 +18,8 @@ package com.smp.components{
 	import flash.events.MouseEvent;
 	
 	import com.smp.common.display.MovieClipUtilities;
-	import com.smp.effects.TweenSafe;
+	import com.gskinner.motion.GTween;
+	import com.gskinner.motion.easing.*;
 
 	public class ScrollerHandler {
 
@@ -40,7 +42,8 @@ package com.smp.components{
 		private var _timer:Timer = new Timer(10);;
 		private var _elasticityTimer:Timer = new Timer(10);
 		
-		private var _tween:TweenSafe = new TweenSafe();
+		private var _tweenTarget:GTween;
+		private var _tweenBtn:GTween;
 		
 		private var _destinationScrollPosition:Number;
 		private var _scrollPositionOnUpdate:uint = 0;
@@ -141,6 +144,9 @@ package com.smp.components{
 			{	
 				stage.addEventListener(MouseEvent.MOUSE_WHEEL, onWheel);
 			}
+			
+			_tweenTarget = new GTween(_target);
+			_tweenBtn = new GTween(scrollBtn);
 		}
 		
 		/*
@@ -180,7 +186,11 @@ package com.smp.components{
 		private function verifyTargetReset():void{
 			if(_target[_property] != _targetInitY){
 				scrollBtn[_property] = 0;
-				_tween.setTween(_target, _property, TweenSafe.REG_EASEOUT, _target[_property], 0, 0.5)
+				_tweenTarget.setValue(_property, 0);
+				_tweenTarget.duration = 0.5;
+				_tweenTarget.ease = Sine.easeOut;
+				
+				//_tween.setTween(_target, _property, TweenSafe.REG_EASEOUT, _target[_property], 0, 0.5)
 			}
 		}
 		
@@ -259,7 +269,10 @@ package com.smp.components{
 				//scrollBtn[_property] = scrollPosition;
 			}
 			
-			_tween.setTween(scrollBtn, _property, TweenSafe.REG_EASEIN, scrollBtn[_property], scrollPosition, 0.5)
+			_tweenBtn.setValue(_property, scrollPosition);
+			_tweenBtn.duration = 0.5;
+			_tweenBtn.ease = Sine.easeIn;
+			//_tween.setTween(scrollBtn, _property, TweenSafe.REG_EASEIN, scrollBtn[_property], scrollPosition, 0.5)
 		}
 		
 		//updates target on regard of scroll button change
