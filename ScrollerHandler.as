@@ -186,7 +186,7 @@ package com.smp.components{
 		private function verifyTargetReset():void{
 			if(_target[_property] != _targetInitY){
 				scrollBtn[_property] = 0;
-				_tweenTarget.setValue(_property, 0);
+				_tweenTarget.setValue(_property, _targetInitY);
 				_tweenTarget.duration = 0.5;
 				_tweenTarget.ease = Sine.easeOut;
 				
@@ -203,7 +203,8 @@ package com.smp.components{
 		
 		private function moveTarget(evt:Event):void 
 		{
-			if(Math.abs(_target[_property] - getTargetPosition()) > 1){
+			if (Math.abs(_target[_property] - getTargetPosition()) > 1) {
+				
 				setTargetPosition();
 			}else {
 				
