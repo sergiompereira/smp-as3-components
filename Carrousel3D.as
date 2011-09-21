@@ -373,6 +373,8 @@ package com.smp.components
 			addEventListener(Event.ENTER_FRAME, enterFrameHandler);
 			if(mouseMoveEase>=1){
 				stage.addEventListener(MouseEvent.MOUSE_MOVE, mouseMoveHandler);
+				
+				_selectedItemId = -1;
 			}
 			
 			
@@ -381,8 +383,7 @@ package com.smp.components
 			if (_selectedItemId >= 0 && mouseUpEnabled) {
 				(itemCollection[_selectedItemId].object as DisplayObject).addEventListener(MouseEvent.MOUSE_UP, upHandler);
 			}
-			
-			_selectedItemId = -1;
+		
 		}
 		
 		public function get selectedItem():DisplayObject
