@@ -172,7 +172,7 @@ package com.smp.components
 		}
 		
 		
-		protected function getItemProperties(obj:DisplayObject):Object {
+		public function getItemProperties(obj:DisplayObject):Object {
 			for (var i:uint = 0; i < numOfItems; i++) {
 				if ((itemCollection[i] as Object).object == obj) {
 					return (itemCollection[i] as Object);
