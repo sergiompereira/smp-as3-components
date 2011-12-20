@@ -1,0 +1,403 @@
+package com.smp.components{
+	
+/*
+******************
+@ Sérgio Pereira
+******************
+
+*/
+	
+	import flash.display.DisplayObject;
+	import flash.display.DisplayObjectContainer;
+	import flash.display.Sprite;
+	import flash.display.MovieClip;
+	import flash.errors.IOError;
+	import flash.events.Event;
+	import flash.events.MouseEvent;
+	import flash.errors.IllegalOperationError;
+	import flash.utils.Timer;
+	import flash.events.TimerEvent;
+	
+	import com.gskinner.motion.GTweener;
+	import com.gskinner.motion.GTween;
+	import com.gskinner.motion.easing.*;
+	
+	import com.smp.common.display.DisplayObjectUtilities;
+
+	/**
+	 * Show an horizontal or vertical sequence, or a cross fade, of a collection of display objects.
+	 * The setup allows to set a mask and the distance between objects
+	 * Methods next and previous and an event dispatcher allows to associate a navigation to external buttons.
+	 * Auto slide and an incremental loading are optional.
+	 * 
+	 * Actions/interactions associated to the objects (items) should be managed outside the class.
+	 */
+	
+	
+	public class PagedGallery extends MovieClip{
+		
+		public static const HSLIDER:uint = 0;
+		public static const VSLIDER:uint = 1;
+		
+		public static const PAGE_CHANGE:String = "PAGE_CHANGE";
+		
+		
+		protected var _objectCollection:Array = new Array();
+		
+		protected var _activePage:Number = 0;
+		
+		protected var _type:uint;
+		protected var _sliderProperty:String;
+		protected var _viewportWidth:Number;
+		protected var _viewportHeight:Number;
+		protected var _gutter:Number;
+		protected var _maskCorrection:Number;
+		protected var _loop:Boolean;
+		protected var _transitionTime:Number;
+		protected var _introtime:Number;
+		protected var _direction:int = 1;
+		
+		protected var _mask:Sprite;
+		protected var _totalItems:Number;
+		protected var _totalPages:Number;
+		
+		protected var _visibleItems:Number = 0;
+		
+		protected var _container:MovieClip = new MovieClip();
+		protected var _tweener:GTween = new GTween(_container);
+		protected var _timer:Timer = new Timer(0);
+		
+		
+		public function PagedGallery() {
+			
+		}
+		
+		/**
+		 * 
+		 * @param	type : HSLIDER horizontal (x), VSLIDER vertical (y)
+		 * @param	width : sets the mask size.
+		 * @param	height : sets the mask size.
+		 * @param	gutter : width of the white space between items;
+		 * @param	maskCorrection : if needed...;
+		 * @param	introtime : if you whish an animation where the items will be added one after another. This value (miliseconds) is the time span between each addition. A value of 0 will build all items at once;
+		 * @param	transitionTime : time span for the slide animation (miliseconds). Defaults to 0.5 seconds.;
+		 */
+		public function setup(type:uint, width:Number, height:Number, gutter:Number = 0,  maskCorrection:Number = 0, introtime:Number = 0, transitionTime:Number = 0.5) {
+		
+			
+			_viewportWidth = Math.round(width);
+			_viewportHeight = Math.round(height);
+			_type = type;
+			_gutter = gutter;
+		
+			_maskCorrection = maskCorrection;
+			
+			_introtime = introtime;
+			_transitionTime = transitionTime;	
+			
+			_mask = new Sprite();
+			with(_mask.graphics){
+				lineStyle();
+				beginFill(0x000000);
+				drawRect(0,0,_viewportWidth, _viewportHeight);
+				endFill();
+			}
+			_mask.x = _maskCorrection;
+			_container.mask = _mask;
+			addChild(_mask);
+			addChild(_container);
+			
+			
+			
+			switch(_type) {
+				case HSLIDER:
+					_sliderProperty = "x";
+					break;
+				case VSLIDER:
+					_sliderProperty = "y";
+					break;
+				
+			}
+			
+					
+		}
+		
+		
+	
+		public function addItem(obj:DisplayObject):void {
+			
+			obj.x = obj.y = 0;
+			_objectCollection.push(obj);
+			_totalItems = _objectCollection.length;
+		}
+		
+		public function clear():void{
+			
+			resetDisplay();
+			_objectCollection.splice(0);
+			_activePage = 0;
+		}
+		
+		private function resetDisplay():void {
+			_timer.reset();
+			
+			DisplayObjectUtilities.deleteAllChildren(_container);
+			_container[_sliderProperty] = 0;
+		}
+		
+		public function start():void{
+				
+			resetDisplay();
+			
+			_totalItems = _objectCollection.length;
+			
+			build();
+		}
+		
+		private function build():void {
+			
+			addEventListener(TimerEvent.TIMER_COMPLETE, onTimerComplete);
+			
+			_activePage = 0;
+			var i:int = 0;
+			var tempSize:Number = 0;
+			switch(_type) {
+				case HSLIDER:
+					for (i = 0; i < _objectCollection.length; i++) {
+						tempSize += (_objectCollection[i] as DisplayObject).width + _gutter;
+						if (tempSize > _viewportWidth) {
+							_visibleItems = i+1;
+							break;
+						}
+					}
+					
+					break;
+				case VSLIDER:
+					for (i = 0; i < _objectCollection.length; i++) {
+						tempSize += (_objectCollection[i] as DisplayObject).height + _gutter;
+						if (tempSize > _viewportHeight) {
+							_visibleItems = i+1;
+							break;
+						}
+					}
+					
+					break;
+				
+			}
+			
+			
+			i = 0;
+			tempSize = 0;
+			
+			if (_introtime > 0) {
+				
+				_timer.delay = _introtime;
+				_timer.addEventListener(TimerEvent.TIMER, onTimer);
+				_timer.start();
+			}else {
+				for (i = 0; i < _objectCollection.length; i++) {
+					addObject(i);
+				}
+				dispatchEvent(new TimerEvent(TimerEvent.TIMER_COMPLETE));
+			}
+			
+			
+			function onTimer(evt:TimerEvent) {
+				if (i < _visibleItems && i < _objectCollection.length) {
+					addObject(i);
+					i++;
+				}else {
+					
+					_timer.removeEventListener(TimerEvent.TIMER, onTimer);
+					_timer.stop();
+					
+					if (_visibleItems < _objectCollection.length) {
+						for (i = _visibleItems; i < _objectCollection.length; i++) {
+							addObject(i);
+						}
+					}
+					dispatchEvent(new TimerEvent(TimerEvent.TIMER_COMPLETE));
+				}
+			}
+			
+			function addObject(j:uint):void {
+				
+				var obj = _objectCollection[j];
+				
+				obj[_sliderProperty] = tempSize;
+				
+				switch(_type) {
+					case HSLIDER:
+						tempSize += (_objectCollection[j] as DisplayObject).width + _gutter; 
+						break;
+					case VSLIDER:
+						tempSize += (_objectCollection[j] as DisplayObject).height + _gutter;
+						break;
+				}
+				
+				if (j < _visibleItems) {
+					
+					if ((obj as DisplayObjectContainer)) {
+						(obj as DisplayObjectContainer).mouseEnabled = true;
+						(obj as DisplayObjectContainer).mouseChildren = true;
+					}
+					var tweener:GTween = new GTween(obj);
+					obj.alpha = 0;
+					tweener.setValue("alpha", 1);
+					tweener.duration = 1.5;
+					tweener.ease = Sine.easeOut;
+					//_tweener.setTween(obj, "alpha", TweenSafe.REG_EASEOUT, 0, 1, 1.5, true, true);
+				}
+				
+				_container.addChildAt(obj, 0);
+			}
+		
+			dispatchEvent(new Event(Event.CHANGE));
+
+		}
+		
+		private function onTimerComplete(evt:TimerEvent):void {
+			
+			/* Debug
+			trace("timer comp "+_objectCollection.length)
+			trace("numChildren " + container.numChildren);
+			trace("position " + container[_sliderProperty]);
+			*/
+			
+			removeEventListener(TimerEvent.TIMER_COMPLETE, onTimerComplete);
+			
+			_totalPages = Math.ceil(_container.width / _viewportWidth);
+			
+			switch(_type) {
+				case HSLIDER:
+					_totalPages = Math.ceil(_container.width / _viewportWidth);
+					break;
+				case VSLIDER:
+					_totalPages = Math.ceil(_container.height / _viewportHeight);
+					break;
+			}
+			
+			dispatchEvent(new Event("START"));
+		
+		}
+		
+		
+		private function transit(direction:int):void {			
+			slide(direction);
+		}
+		
+		private function slide(direction:int):void{
+			
+			//in case an external client has changed the container position...
+			
+			var evalCurrentPage:int;
+			switch(_type) {
+				case HSLIDER:
+					evalCurrentPage = Math.round( - _container[_sliderProperty] / _viewportWidth);
+					break;
+				case VSLIDER:
+					evalCurrentPage = Math.round( - _container[_sliderProperty] / _viewportHeight);
+					break;
+			}
+			
+			if (evalCurrentPage != _activePage) 
+			{
+				_activePage = evalCurrentPage;
+			}
+			
+			switch(direction) {
+				
+				//prev
+				case 0:
+					if (_activePage > 0) {
+						_activePage--;
+					}
+					break;
+					
+				//next
+				case 1:
+					if (_activePage < _totalPages-1) {
+						_activePage++;
+					}
+					break;
+			}
+			
+			
+			switch(_type) {
+				case HSLIDER:
+					setTweenSlide( -_activePage * _viewportWidth);
+					break;
+				case VSLIDER:
+					setTweenSlide( -_activePage * _viewportHeight);
+					break;
+			}
+			dispatchEvent(new Event(PAGE_CHANGE));
+		}
+		
+		
+		
+		private function setTweenSlide(finalPos:Number):void {
+
+			_tweener.setValue(_sliderProperty, finalPos);
+			_tweener.duration = _transitionTime;
+			_tweener.ease = Sine.easeOut;
+			//_tweener.setTween(container, _sliderProperty, TweenSafe.REG_EASEOUT, container[_sliderProperty], finalx, _transitionTime, true, true);
+		}
+		
+		
+		public function get activePage():Number{
+			return _activePage;
+		}
+		
+		public function gotoPage(id:Number):void{
+			
+			
+			switch(_type) {
+				case HSLIDER:
+					setTweenSlide(-id*_viewportWidth);
+					break;
+				case VSLIDER:
+					setTweenSlide(-id*_viewportHeight);
+					break;
+			}
+			
+			_activePage = id;
+			dispatchEvent(new Event(PAGE_CHANGE));
+		}
+		
+		public function next():void {
+			transit(1);
+		}
+		
+		public function previous():void {
+			transit(0);
+		}
+		
+		public function setPage(id:Number):void
+		{
+			_activePage = id;
+			
+			switch(_type) {
+				case HSLIDER:
+					_container[_sliderProperty] = -id*_viewportWidth;
+					break;
+				case VSLIDER:
+					_container[_sliderProperty] = -id*_viewportHeight;
+					break;
+				
+			}
+			
+			_activePage = id;
+			dispatchEvent(new Event(PAGE_CHANGE));
+		}
+		
+		public function getContainer():MovieClip {
+			return _container;
+		}
+		
+		public function getCollection():Array {
+			return _objectCollection;
+		}
+	}
+	
+}

@@ -6,6 +6,7 @@ package com.smp.components{
 ******************
 
 */
+	import com.gskinner.motion.GTweener;
 	import flash.display.DisplayObject;
 	import flash.display.DisplayObjectContainer;
 	import flash.display.Sprite;
@@ -17,20 +18,20 @@ package com.smp.components{
 	import flash.utils.Timer;
 	import flash.events.TimerEvent;
 	
+	import com.gskinner.motion.GTween;
+	import com.gskinner.motion.easing.*;
 	
-	import com.smp.effects.TweenSafe;
 	import com.smp.common.display.DisplayObjectUtilities;
 
 	/**
-	 * Allows to show an horizontal or vertical sequence, or a cross fade, of a collection of display objects.
+	 * Show an horizontal or vertical sequence, or a cross fade, of a collection of display objects.
 	 * The setup allows to set a mask and the distance between objects
 	 * Methods next and previous and an event dispatcher allows to associate a navigation to external buttons.
-	 * Autoslide is possible and also an incremental loading is optional.
+	 * Auto slide and an incremental loading are optional.
 	 * 
 	 * Actions/interactions associated to the objects (items) should be managed outside the class.
-	 * A getActiveId is available, but no getActiveItem.
+	 * A getActiveId is available, but no getActiveItem. Keep a reference to the collection outside the gallery and use the id to find the item in there.
 	 */
-	
 	
 	
 	public class DisplayCollectionGallery extends MovieClip{
@@ -64,8 +65,7 @@ package com.smp.components{
 		protected var _visibleImages:Number;
 		
 		protected var container:MovieClip = new MovieClip();
-		
-		protected var _tweener:TweenSafe = new TweenSafe();
+		protected var _tweener:GTween = new GTween(container);
 		protected var _timer:Timer = new Timer(0);
 		
 		
@@ -174,7 +174,7 @@ package com.smp.components{
 			}
 		}
 		
-		public function build():void{
+		public function start():void{
 				
 			resetDisplay();
 			
@@ -254,7 +254,13 @@ package com.smp.components{
 						(obj as DisplayObjectContainer).mouseEnabled = true;
 						(obj as DisplayObjectContainer).mouseChildren = true;
 					}
-					_tweener.setTween(obj, "alpha", TweenSafe.REG_EASEOUT, 0, 1, 1.5, true, true);
+					
+					var tweener:GTween = new GTween(obj);
+					obj.alpha = 0;
+					tweener.setValue("alpha", 1);
+					tweener.duration = 1.5;
+					tweener.ease = Sine.easeOut;
+					//_tweener.setTween(obj, "alpha", TweenSafe.REG_EASEOUT, 0, 1, 1.5, true, true);
 				}
 				
 				container.addChildAt(obj, 0);
@@ -419,8 +425,12 @@ package com.smp.components{
 			setTweenFade(_objectCollection[_activeId],1);
 		}
 		
-		private function setTweenSlide(finalx):void{
-			_tweener.setTween(container, _sliderProperty, TweenSafe.REG_EASEOUT, container[_sliderProperty], finalx, _transitionTime, true, true);
+		private function setTweenSlide(finalx):void {
+
+			_tweener.setValue(_sliderProperty, finalx);
+			_tweener.duration = _transitionTime;
+			_tweener.ease = Sine.easeOut;
+			//_tweener.setTween(container, _sliderProperty, TweenSafe.REG_EASEOUT, container[_sliderProperty], finalx, _transitionTime, true, true);
 		}
 		
 		private function setTweenFade(obj:DisplayObject, destValue:Number):void {
@@ -433,7 +443,11 @@ package com.smp.components{
 				(obj as DisplayObjectContainer ).mouseChildren = false;
 			}
 			
-			_tweener.setTween(obj, "alpha", TweenSafe.REG_EASEOUT, obj.alpha, destValue, _transitionTime, true, true);
+			var tweener:GTween = new GTween(obj);
+			tweener.setValue(_sliderProperty, destValue);
+			tweener.duration = _transitionTime;
+			tweener.ease = Sine.easeOut;
+			//_tweener.setTween(obj, "alpha", TweenSafe.REG_EASEOUT, obj.alpha, destValue, _transitionTime, true, true);
 		}
 		
 		public function get activeId():Number{
