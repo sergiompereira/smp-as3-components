@@ -277,7 +277,7 @@ package com.smp.components{
 					break;
 			}
 			
-			dispatchEvent(new Event("START"));
+			dispatchEvent(new Event(Event.INIT));
 		
 		}
 		
@@ -397,6 +397,10 @@ package com.smp.components{
 		
 		public function getCollection():Array {
 			return _objectCollection;
+		}
+		
+		public function getOffset():Number {
+			return _container[_sliderProperty];
 		}
 	}
 	
