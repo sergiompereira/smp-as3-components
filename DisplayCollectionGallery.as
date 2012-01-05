@@ -25,7 +25,7 @@ package com.smp.components{
 
 	/**
 	 * Show an horizontal or vertical sequence, or a cross fade, of a collection of display objects.
-	 * The setup allows to set a mask and the distance between objects
+	 * The setup allows to set a mask and a fixed distance between objects
 	 * Methods next and previous and an event dispatcher allows to associate a navigation to external buttons.
 	 * Auto slide and an incremental loading are optional.
 	 * 
@@ -266,7 +266,7 @@ package com.smp.components{
 				container.addChildAt(obj, 0);
 			}
 		
-			dispatchEvent(new Event(Event.CHANGE));
+			dispatchEvent(new Event(Event.INIT));
 
 		}
 		
@@ -512,6 +512,10 @@ package com.smp.components{
 		
 		public function getCollection():Array {
 			return _objectCollection;
+		}
+		
+		public function getOffset():Number {
+			return container[_sliderProperty];
 		}
 	}
 	

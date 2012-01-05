@@ -43,7 +43,7 @@ package com.smp.components{
 		
 		
 		protected var _objectCollection:Array = new Array();
-		
+		protected var _positionDirectory:Object = new Object();
 		protected var _activePage:Number = 0;
 		
 		protected var _type:uint;
@@ -51,8 +51,8 @@ package com.smp.components{
 		protected var _viewportWidth:Number;
 		protected var _viewportHeight:Number;
 		protected var _gutter:Number;
+		protected var _itemsPerPage:int;
 		protected var _maskCorrection:Number;
-		protected var _loop:Boolean;
 		protected var _transitionTime:Number;
 		protected var _introtime:Number;
 		protected var _direction:int = 1;
@@ -68,6 +68,17 @@ package com.smp.components{
 		protected var _timer:Timer = new Timer(0);
 		
 		
+		/**
+		 * Show an horizontal or vertical sequence of a collection of display objects.
+		 * The navigation will be based on pages. Pages might be based on a fixed length (the viewport size) or on groups of items (see setup() for details)
+		 * The setup allows to set a mask that will work as a viewport.
+		 * Be sure the items are ready to display before calling start(), as their size will affect the pagination.
+		 * Methods next and previous and an event dispatcher allows to associate a navigation to external buttons.
+		 * Auto slide and an incremental loading are optional.
+		 * 
+		 * Actions/interactions associated to the objects (items) should be managed outside the class.
+		 * A getActiveId is available, but no getActiveItem. Keep a reference to the collection outside the gallery and use the id to find the item in there.
+		 */
 		public function PagedGallery() {
 			
 		}
@@ -78,18 +89,19 @@ package com.smp.components{
 		 * @param	width : sets the mask size.
 		 * @param	height : sets the mask size.
 		 * @param	gutter : width of the white space between items;
+		 * @param	itemsPerPage : set to 0 (default) to use the viewport size as the page size. A number greater then 0 will define pages based on a fixed number of items - groups. If the items are all the same size and they round to the viewport size, the default is fine.
 		 * @param	maskCorrection : if needed...;
 		 * @param	introtime : if you whish an animation where the items will be added one after another. This value (miliseconds) is the time span between each addition. A value of 0 will build all items at once;
 		 * @param	transitionTime : time span for the slide animation (miliseconds). Defaults to 0.5 seconds.;
 		 */
-		public function setup(type:uint, width:Number, height:Number, gutter:Number = 0,  maskCorrection:Number = 0, introtime:Number = 0, transitionTime:Number = 0.5) {
+		public function setup(type:uint, width:Number, height:Number, gutter:Number = 0, itemsPerPage:int = 0, maskCorrection:Number = 0, introtime:Number = 0, transitionTime:Number = 0.5) {
 		
 			
 			_viewportWidth = Math.round(width);
 			_viewportHeight = Math.round(height);
 			_type = type;
 			_gutter = gutter;
-		
+			_itemsPerPage = itemsPerPage;
 			_maskCorrection = maskCorrection;
 			
 			_introtime = introtime;
@@ -116,6 +128,10 @@ package com.smp.components{
 				case VSLIDER:
 					_sliderProperty = "y";
 					break;
+				default:
+					_type = HSLIDER;
+					_sliderProperty = "x";
+					break;	
 				
 			}
 			
@@ -127,7 +143,7 @@ package com.smp.components{
 		public function addItem(obj:DisplayObject):void {
 			
 			obj.x = obj.y = 0;
-			_objectCollection.push(obj);
+			_objectCollection.push({display:obj, position:0});
 			_totalItems = _objectCollection.length;
 		}
 		
@@ -145,6 +161,9 @@ package com.smp.components{
 			_container[_sliderProperty] = 0;
 		}
 		
+		/**
+		 * Be sure the items are ready to display before calling start(), as their size will affect the pagination.
+		 */
 		public function start():void{
 				
 			resetDisplay();
@@ -164,7 +183,7 @@ package com.smp.components{
 			switch(_type) {
 				case HSLIDER:
 					for (i = 0; i < _objectCollection.length; i++) {
-						tempSize += (_objectCollection[i] as DisplayObject).width + _gutter;
+						tempSize += (_objectCollection[i].display as DisplayObject).width + _gutter;
 						if (tempSize > _viewportWidth) {
 							_visibleItems = i+1;
 							break;
@@ -174,7 +193,7 @@ package com.smp.components{
 					break;
 				case VSLIDER:
 					for (i = 0; i < _objectCollection.length; i++) {
-						tempSize += (_objectCollection[i] as DisplayObject).height + _gutter;
+						tempSize += (_objectCollection[i].display as DisplayObject).height + _gutter;
 						if (tempSize > _viewportHeight) {
 							_visibleItems = i+1;
 							break;
@@ -222,16 +241,18 @@ package com.smp.components{
 			
 			function addObject(j:uint):void {
 				
-				var obj = _objectCollection[j];
+				var obj = _objectCollection[j].display;
 				
 				obj[_sliderProperty] = tempSize;
+				_objectCollection[j].position = tempSize;
+				_positionDirectory["p_" + tempSize.toString()] = j;
 				
 				switch(_type) {
 					case HSLIDER:
-						tempSize += (_objectCollection[j] as DisplayObject).width + _gutter; 
+						tempSize += (_objectCollection[j].display as DisplayObject).width + _gutter; 
 						break;
 					case VSLIDER:
-						tempSize += (_objectCollection[j] as DisplayObject).height + _gutter;
+						tempSize += (_objectCollection[j].display as DisplayObject).height + _gutter;
 						break;
 				}
 				
@@ -266,15 +287,18 @@ package com.smp.components{
 			
 			removeEventListener(TimerEvent.TIMER_COMPLETE, onTimerComplete);
 			
-			_totalPages = Math.ceil(_container.width / _viewportWidth);
-			
-			switch(_type) {
-				case HSLIDER:
-					_totalPages = Math.ceil(_container.width / _viewportWidth);
-					break;
-				case VSLIDER:
-					_totalPages = Math.ceil(_container.height / _viewportHeight);
-					break;
+			if (_itemsPerPage > 0) {
+				_totalPages = Math.ceil(_objectCollection.length / _itemsPerPage);
+			}else {
+				_itemsPerPage = 0;
+				switch(_type) {
+					case HSLIDER:
+						_totalPages = Math.ceil(_container.width / _viewportWidth);
+						break;
+					case VSLIDER:
+						_totalPages = Math.ceil(_container.height / _viewportHeight);
+						break;
+				}
 			}
 			
 			dispatchEvent(new Event(Event.INIT));
@@ -291,13 +315,18 @@ package com.smp.components{
 			//in case an external client has changed the container position...
 			
 			var evalCurrentPage:int;
-			switch(_type) {
-				case HSLIDER:
-					evalCurrentPage = Math.round( - _container[_sliderProperty] / _viewportWidth);
-					break;
-				case VSLIDER:
-					evalCurrentPage = Math.round( - _container[_sliderProperty] / _viewportHeight);
-					break;
+			if (_itemsPerPage > 0) {
+				
+				evalCurrentPage = Math.round( getIndexFromPosition(_container[_sliderProperty], direction) / _itemsPerPage);
+			}else {
+				switch(_type) {
+					case HSLIDER:
+						evalCurrentPage = Math.round( - _container[_sliderProperty] / _viewportWidth);
+						break;
+					case VSLIDER:
+						evalCurrentPage = Math.round( - _container[_sliderProperty] / _viewportHeight);
+						break;
+				}
 			}
 			
 			if (evalCurrentPage != _activePage) 
@@ -322,14 +351,21 @@ package com.smp.components{
 					break;
 			}
 			
-			
-			switch(_type) {
-				case HSLIDER:
-					setTweenSlide( -_activePage * _viewportWidth);
-					break;
-				case VSLIDER:
-					setTweenSlide( -_activePage * _viewportHeight);
-					break;
+			if (_itemsPerPage > 0) {
+				
+				var destIndex:int = _activePage * _itemsPerPage;
+				var destPos:Number = _objectCollection[destIndex].position;
+				setTweenSlide( -destPos);
+				
+			}else {
+				switch(_type) {
+					case HSLIDER:
+						setTweenSlide( -_activePage * _viewportWidth);
+						break;
+					case VSLIDER:
+						setTweenSlide( -_activePage * _viewportHeight);
+						break;
+				}
 			}
 			dispatchEvent(new Event(PAGE_CHANGE));
 		}
@@ -351,14 +387,21 @@ package com.smp.components{
 		
 		public function gotoPage(id:Number):void{
 			
-			
-			switch(_type) {
-				case HSLIDER:
-					setTweenSlide(-id*_viewportWidth);
-					break;
-				case VSLIDER:
-					setTweenSlide(-id*_viewportHeight);
-					break;
+			if (_itemsPerPage > 0) {
+				
+				var destIndex:int = id * _itemsPerPage;
+				var destPos:Number = _objectCollection[destIndex].position;
+				setTweenSlide( -destPos);
+				
+			}else {
+				switch(_type) {
+					case HSLIDER:
+						setTweenSlide(-id*_viewportWidth);
+						break;
+					case VSLIDER:
+						setTweenSlide(-id*_viewportHeight);
+						break;
+				}
 			}
 			
 			_activePage = id;
@@ -376,15 +419,22 @@ package com.smp.components{
 		public function setPage(id:Number):void
 		{
 			_activePage = id;
-			
-			switch(_type) {
-				case HSLIDER:
-					_container[_sliderProperty] = -id*_viewportWidth;
-					break;
-				case VSLIDER:
-					_container[_sliderProperty] = -id*_viewportHeight;
-					break;
+			if (_itemsPerPage > 0) {
 				
+				var destIndex:int = id * _itemsPerPage;
+				var destPos:Number = _objectCollection[destIndex].position;
+				_container[_sliderProperty] = -destPos;
+				
+			}else {
+				switch(_type) {
+					case HSLIDER:
+						_container[_sliderProperty] = -id*_viewportWidth;
+						break;
+					case VSLIDER:
+						_container[_sliderProperty] = -id*_viewportHeight;
+						break;
+					
+				}
 			}
 			
 			_activePage = id;
@@ -401,6 +451,29 @@ package com.smp.components{
 		
 		public function getOffset():Number {
 			return _container[_sliderProperty];
+		}
+		
+		
+		//helpers
+		private function getIndexFromPosition(pos:Number, direction:int ):int {
+			var i:int;
+			if (direction == 0) {
+				for (i = 0; i < _objectCollection.length; i++) {
+					if (_objectCollection[i].position > -pos) {
+						return i - 1;
+					}
+				}
+				return _objectCollection.length - 1;
+			
+			}else if (direction == 1) {
+				for (i = _objectCollection.length-1; i >= 0; i--) {
+					if (_objectCollection[i].position < -pos) {
+						return i + 1;
+					}
+				}
+			}
+			
+			return 0;
 		}
 	}
 	
