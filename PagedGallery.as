@@ -458,6 +458,11 @@ package com.smp.components{
 			dispatchEvent(new Event(PAGE_CHANGE));
 		}
 		
+		
+		public function getNumPages():int {
+			return _totalPages;
+		}
+		
 		public function getContainer():MovieClip {
 			return _container;
 		}
