@@ -15,6 +15,7 @@ package com.smp.components{
 	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.errors.IllegalOperationError;
+	import flash.geom.Rectangle;
 	import flash.utils.Timer;
 	import flash.events.TimerEvent;
 	
@@ -48,11 +49,9 @@ package com.smp.components{
 		
 		protected var _type:uint;
 		protected var _sliderProperty:String;
-		protected var _viewportWidth:Number;
-		protected var _viewportHeight:Number;
+		protected var _viewport:Rectangle;
 		protected var _gutter:Number;
 		protected var _itemsPerPage:int;
-		protected var _maskCorrection:Number;
 		protected var _transitionTime:Number;
 		protected var _introtime:Number;
 		protected var _direction:int = 1;
@@ -86,23 +85,20 @@ package com.smp.components{
 		/**
 		 * 
 		 * @param	type : HSLIDER horizontal (x), VSLIDER vertical (y)
-		 * @param	width : sets the mask size.
-		 * @param	height : sets the mask size.
+		 * @param	viewport : sets the mask.
 		 * @param	gutter : width of the white space between items;
 		 * @param	itemsPerPage : set to 0 (default) to use the viewport size as the page size. A number greater then 0 will define pages based on a fixed number of items - groups. If the items are all the same size and they round to the viewport size, the default is fine.
 		 * @param	maskCorrection : if needed...;
 		 * @param	introtime : if you whish an animation where the items will be added one after another. This value (miliseconds) is the time span between each addition. A value of 0 will build all items at once;
 		 * @param	transitionTime : time span for the slide animation (miliseconds). Defaults to 0.5 seconds.;
 		 */
-		public function setup(type:uint, width:Number, height:Number, gutter:Number = 0, itemsPerPage:int = 0, maskCorrection:Number = 0, introtime:Number = 0, transitionTime:Number = 0.5) {
+		public function setup(type:uint, viewport:Rectangle, gutter:Number = 0, itemsPerPage:int = 0, introtime:Number = 0, transitionTime:Number = 0.5) {
 		
 			
-			_viewportWidth = Math.round(width);
-			_viewportHeight = Math.round(height);
+			_viewport = viewport;
 			_type = type;
 			_gutter = gutter;
 			_itemsPerPage = itemsPerPage;
-			_maskCorrection = maskCorrection;
 			
 			_introtime = introtime;
 			_transitionTime = transitionTime;	
@@ -111,10 +107,11 @@ package com.smp.components{
 			with(_mask.graphics){
 				lineStyle();
 				beginFill(0x000000);
-				drawRect(0,0,_viewportWidth, _viewportHeight);
+				drawRect(0,0,_viewport.width, _viewport.height);
 				endFill();
 			}
-			_mask.x = _maskCorrection;
+			_mask.x = _viewport.x;
+			_mask.y = _viewport.y;
 			_container.mask = _mask;
 			addChild(_mask);
 			addChild(_container);
@@ -184,7 +181,7 @@ package com.smp.components{
 				case HSLIDER:
 					for (i = 0; i < _objectCollection.length; i++) {
 						tempSize += (_objectCollection[i].display as DisplayObject).width + _gutter;
-						if (tempSize > _viewportWidth) {
+						if (tempSize > _viewport.width) {
 							_visibleItems = i+1;
 							break;
 						}
@@ -194,7 +191,7 @@ package com.smp.components{
 				case VSLIDER:
 					for (i = 0; i < _objectCollection.length; i++) {
 						tempSize += (_objectCollection[i].display as DisplayObject).height + _gutter;
-						if (tempSize > _viewportHeight) {
+						if (tempSize > _viewport.height) {
 							_visibleItems = i+1;
 							break;
 						}
@@ -293,10 +290,10 @@ package com.smp.components{
 				_itemsPerPage = 0;
 				switch(_type) {
 					case HSLIDER:
-						_totalPages = Math.ceil(_container.width / _viewportWidth);
+						_totalPages = Math.ceil(_container.width / _viewport.width);
 						break;
 					case VSLIDER:
-						_totalPages = Math.ceil(_container.height / _viewportHeight);
+						_totalPages = Math.ceil(_container.height / _viewport.height);
 						break;
 				}
 			}
@@ -316,15 +313,35 @@ package com.smp.components{
 			
 			var evalCurrentPage:int;
 			if (_itemsPerPage > 0) {
-				
+		
+			
+				if (direction == 1) {
+					var lastindex:int = _objectCollection.length - 1;
+					var lastpos:Number = _objectCollection[lastindex].position;
+					
+					switch(_type) {
+						case HSLIDER:
+							if (lastpos - (-_container[_sliderProperty]) <= _viewport.width) {
+								return;
+							}
+							break;
+						case VSLIDER:
+							if (lastpos - (-_container[_sliderProperty]) <= _viewport.height) {
+								return;
+							}
+							break;
+					}
+				}
 				evalCurrentPage = Math.round( getIndexFromPosition(_container[_sliderProperty], direction) / _itemsPerPage);
+				
+				
 			}else {
 				switch(_type) {
 					case HSLIDER:
-						evalCurrentPage = Math.round( - _container[_sliderProperty] / _viewportWidth);
+						evalCurrentPage = Math.round( - _container[_sliderProperty] / _viewport.width);
 						break;
 					case VSLIDER:
-						evalCurrentPage = Math.round( - _container[_sliderProperty] / _viewportHeight);
+						evalCurrentPage = Math.round( - _container[_sliderProperty] / _viewport.height);
 						break;
 				}
 			}
@@ -360,10 +377,10 @@ package com.smp.components{
 			}else {
 				switch(_type) {
 					case HSLIDER:
-						setTweenSlide( -_activePage * _viewportWidth);
+						setTweenSlide( -_activePage * _viewport.width);
 						break;
 					case VSLIDER:
-						setTweenSlide( -_activePage * _viewportHeight);
+						setTweenSlide( -_activePage * _viewport.height);
 						break;
 				}
 			}
@@ -396,10 +413,10 @@ package com.smp.components{
 			}else {
 				switch(_type) {
 					case HSLIDER:
-						setTweenSlide(-id*_viewportWidth);
+						setTweenSlide(-id*_viewport.width);
 						break;
 					case VSLIDER:
-						setTweenSlide(-id*_viewportHeight);
+						setTweenSlide(-id*_viewport.height);
 						break;
 				}
 			}
@@ -428,10 +445,10 @@ package com.smp.components{
 			}else {
 				switch(_type) {
 					case HSLIDER:
-						_container[_sliderProperty] = -id*_viewportWidth;
+						_container[_sliderProperty] = -id*_viewport.width;
 						break;
 					case VSLIDER:
-						_container[_sliderProperty] = -id*_viewportHeight;
+						_container[_sliderProperty] = -id*_viewport.height;
 						break;
 					
 				}
