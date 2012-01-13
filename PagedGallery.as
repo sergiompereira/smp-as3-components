@@ -62,7 +62,7 @@ package com.smp.components{
 		
 		protected var _visibleItems:Number = 0;
 		
-		protected var _container:MovieClip = new MovieClip();
+		protected var _container:Sprite = new Sprite();
 		protected var _tweener:GTween = new GTween(_container);
 		protected var _timer:Timer = new Timer(0);
 		
@@ -85,7 +85,7 @@ package com.smp.components{
 		/**
 		 * 
 		 * @param	type : HSLIDER horizontal (x), VSLIDER vertical (y)
-		 * @param	viewport : sets the mask.
+		 * @param	viewport : sets the visible area (but does not actually apply a mask). Call getContainer, to handle it yourself.
 		 * @param	gutter : width of the white space between items;
 		 * @param	itemsPerPage : set to 0 (default) to use the viewport size as the page size. A number greater then 0 will define pages based on a fixed number of items - groups. If the items are all the same size and they round to the viewport size, the default is fine.
 		 * @param	maskCorrection : if needed...;
@@ -103,6 +103,7 @@ package com.smp.components{
 			_introtime = introtime;
 			_transitionTime = transitionTime;	
 			
+			/*
 			_mask = new Sprite();
 			with(_mask.graphics){
 				lineStyle();
@@ -112,8 +113,10 @@ package com.smp.components{
 			}
 			_mask.x = _viewport.x;
 			_mask.y = _viewport.y;
+			
 			_container.mask = _mask;
 			addChild(_mask);
+			*/
 			addChild(_container);
 			
 			
@@ -321,12 +324,12 @@ package com.smp.components{
 					
 					switch(_type) {
 						case HSLIDER:
-							if (lastpos - (-_container[_sliderProperty]) <= _viewport.width) {
+							if (lastpos + _objectCollection[lastindex].width - (-_container[_sliderProperty]) <= _viewport.width) {
 								return;
 							}
 							break;
 						case VSLIDER:
-							if (lastpos - (-_container[_sliderProperty]) <= _viewport.height) {
+							if (lastpos + _objectCollection[lastindex].width - (-_container[_sliderProperty]) <= _viewport.height) {
 								return;
 							}
 							break;
@@ -463,7 +466,7 @@ package com.smp.components{
 			return _totalPages;
 		}
 		
-		public function getContainer():MovieClip {
+		public function getContainer():Sprite {
 			return _container;
 		}
 		
