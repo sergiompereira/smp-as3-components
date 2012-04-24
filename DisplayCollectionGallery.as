@@ -426,7 +426,7 @@ package com.smp.components{
 		}
 		
 		private function setTweenSlide(finalx):void {
-
+			//_tweener.end();
 			_tweener.setValue(_sliderProperty, finalx);
 			_tweener.duration = _transitionTime;
 			_tweener.ease = Sine.easeOut;
@@ -465,8 +465,13 @@ package com.smp.components{
 					setTweenSlide(-id*_span);
 					break;
 				case FADER:
-					setTweenFade(_objectCollection[_activeId], 0);
+					//setTweenFade(_objectCollection[_activeId], 0);
+					if (_activeId > -1) {
+						_objectCollection[_activeId].alpha = 0;
+					}
+					
 					container.addChild(_objectCollection[id]);
+					_objectCollection[id].alpha = 0;
 					setTweenFade(_objectCollection[id], 1);
 					break;
 			}
