@@ -8,6 +8,7 @@ package com.smp.components{
 	 * 
 	 */
 	
+	import com.smp.common.display.DragHandler;
 	import flash.display.MovieClip;
 	import flash.geom.Rectangle;
 	import flash.geom.Point;
@@ -30,6 +31,8 @@ package com.smp.components{
 		protected var scrollLength:Number;
 		protected var scrollBounds:Object;
 		
+		protected var initialized:Boolean = false;
+		
 		private var _target:*;
 		private var _property:String;
 		private var _propertyLength:String;
@@ -50,6 +53,7 @@ package com.smp.components{
 		
 		private var _addedToStage:Boolean = false;
 		
+		private var _dragHnd:DragHandler = new DragHandler();
 		
 
 		
@@ -61,7 +65,7 @@ package com.smp.components{
 		* 	@param scrollBtn : parent must be of type MovieClip
 		*	@param scrollBkg
 		*/
-		public function setObject(scrollBtn:MovieClip, scrollBkg:MovieClip, scrollLength:Number = 0):void {
+		public function init(scrollBtn:MovieClip, target:*, scrollBkg:MovieClip = null, scrollLength:Number = 0, property:String = "y", elasticity:Number = 1, onwheel:Boolean = true):void {
 			
 			this.scrollBtn = scrollBtn;
 			this.scrollBkg = scrollBkg;
@@ -71,10 +75,10 @@ package com.smp.components{
 				if((scrollBtn.parent as MovieClip) != null){
 					this.scroller = (scrollBtn.parent as MovieClip);
 				}else{
-					throw new Error("ScrollerHandler:setObject->Scroll button's parent must be of type MovieClip.")
+					throw new Error("ScrollerHandler:init->Scroll button's parent must be of type MovieClip.")
 				}
 			}else {
-				throw new Error("ScrollerHandler:setObject->Objects must be added to the display list.");
+				throw new Error("ScrollerHandler:init->Objects must be added to the display list.");
 			}
 			
 			
@@ -83,30 +87,35 @@ package com.smp.components{
 				_addedToStage = true;
 				scrollBtn.buttonMode = true;
 			}else {
-				throw new Error("ScrollerHandler:setObject->Parent object must be added to the display list.")
+				throw new Error("ScrollerHandler:init->Parent object must be added to the display list.")
 			}
 			
 			//_scroller.addEventListener(Event.ADDED_TO_STAGE, onStageReady);
 			//onStageReady();
-		}
 		
-		public function init(target:*, elasticity:Number = 1, property:String = "y", onwheel:Boolean = true):void {
 			_target = target;
 			_elasticity = elasticity;
 			_property = property;
-			
-			_frameInitY = scroller[_property];
-			_targetInitY = _target[_property];
-			_destinationScrollPosition = scrollBtn[_property];
 			
 			if (_property == "y") {
 				_propertyLength = "height";
 			}else {
 				_propertyLength = "width";
 			}
+			
+			_frameInitY = scroller[_property];
+			_targetInitY = _target[_property];
+			_targetInitHeight = _target[_propertyLength];
+			_destinationScrollPosition = scrollBtn[_property];
+			
+			
 
-			if(scrollLength == 0){
-				scrollLength = scrollBkg[_propertyLength];
+			if (scrollLength == 0) {
+				if (scrollBkg != null) {
+					scrollLength = scrollBkg[_propertyLength];
+				}else {
+					throw new Error("ScrollerHandler:init->Either set the scroller background element or the scroll length property.");
+				}
 			}
 			
 			var scrolldistance:Number = scrollLength - scrollBtn[_propertyLength];
@@ -125,28 +134,49 @@ package com.smp.components{
 				scrollBounds.height = 0;
 			}
 			
-			MovieClipUtilities.setDraggable(scrollBtn, false, scrollBounds.x, scrollBounds.y, scrollBounds.width, scrollBounds.height);
+			if (!initialized) {
+				//MovieClipUtilities.setDraggable(scrollBtn, false, scrollBounds.x, scrollBounds.y, scrollBounds.width, scrollBounds.height);
+				//scrollBtn.addEventListener("Drag", onDrag);
+				
+				_dragHnd.setDraggable(scrollBtn, false, scrollBounds.x, scrollBounds.y, scrollBounds.width, scrollBounds.height, null, null,onDrag);
 
-			scrollBtn.addEventListener("Drag", onDrag);
+				
+				if (scrollBkg != null)
+				{
+					scrollBkg.buttonMode = true;
+					scrollBkg.addEventListener(MouseEvent.MOUSE_UP, onRepositionScrollBtn);
+				}
+				
 
-			
-			if (scrollBkg != null)
-			{
-				scrollBkg.buttonMode = true;
-				scrollBkg.addEventListener(MouseEvent.MOUSE_UP, onRepositionScrollBtn);
+				_timer.addEventListener(TimerEvent.TIMER, onTimer, false, 0, true);
+				_timer.start();
+				
+				if (onwheel)
+				{	
+					stage.addEventListener(MouseEvent.MOUSE_WHEEL, onWheel);
+				}
+				
+				_tweenTarget = new GTween(_target);
+				_tweenBtn = new GTween(scrollBtn);
+				
+				initialized = true;
+			}else {
+				_dragHnd.resetTarget(scrollBtn);
+				_dragHnd.setDraggable(scrollBtn, false, scrollBounds.x, scrollBounds.y, scrollBounds.width, scrollBounds.height, null, null, onDrag);
+				
+				if (scrollBkg != null)
+				{
+					scrollBkg.buttonMode = true;
+					scrollBkg.addEventListener(MouseEvent.MOUSE_UP, onRepositionScrollBtn);
+				}
+				
+				GTween.pauseAll = true;
+				
+				_tweenTarget = new GTween(_target);
+				_tweenBtn = new GTween(scrollBtn);
 			}
-			_targetInitHeight = _target[_propertyLength];
-
-			_timer.addEventListener(TimerEvent.TIMER, onTimer, false, 0, true);
-			_timer.start();
 			
-			if (onwheel)
-			{	
-				stage.addEventListener(MouseEvent.MOUSE_WHEEL, onWheel);
-			}
 			
-			_tweenTarget = new GTween(_target);
-			_tweenBtn = new GTween(scrollBtn);
 		}
 		
 		/*
@@ -194,7 +224,7 @@ package com.smp.components{
 			}
 		}
 		
-		private function onDrag(evt:Event):void 
+		private function onDrag(scrollBtn:MovieClip):void 
 		{
 			
 			scroller.addEventListener(Event.ENTER_FRAME, moveTarget, false, 0, true);
