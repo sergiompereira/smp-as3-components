@@ -110,15 +110,15 @@ package com.smp.components{
 			
 			
 
-			if (scrollLength == 0) {
+			if (this.scrollLength == 0) {
 				if (scrollBkg != null) {
-					scrollLength = scrollBkg[_propertyLength];
+					this.scrollLength = scrollBkg[_propertyLength];
 				}else {
 					throw new Error("ScrollerHandler:init->Either set the scroller background element or the scroll length property.");
 				}
 			}
 			
-			var scrolldistance:Number = scrollLength - scrollBtn[_propertyLength];
+			var scrolldistance:Number = this.scrollLength - scrollBtn[_propertyLength];
 			
 			scrollBounds = new Object();
 			
