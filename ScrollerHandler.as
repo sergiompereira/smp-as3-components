@@ -9,7 +9,9 @@ package com.smp.components{
 	 */
 	
 	import com.smp.common.display.DragHandler;
+	import flash.display.DisplayObject;
 	import flash.display.MovieClip;
+	import flash.events.EventDispatcher;
 	import flash.geom.Rectangle;
 	import flash.geom.Point;
 	import flash.events.Event;
@@ -22,7 +24,7 @@ package com.smp.components{
 	import com.gskinner.motion.GTween;
 	import com.gskinner.motion.easing.*;
 
-	public class ScrollerHandler {
+	public class ScrollerHandler extends EventDispatcher {
 
 		protected var scroller:MovieClip;
 		protected var scrollBtn:MovieClip;
@@ -224,11 +226,12 @@ package com.smp.components{
 			}
 		}
 		
-		private function onDrag(scrollBtn:MovieClip):void 
+		protected function onDrag(scrollBtn:MovieClip):void 
 		{
 			
 			scroller.addEventListener(Event.ENTER_FRAME, moveTarget, false, 0, true);
 			scroller.removeEventListener(Event.ENTER_FRAME, moveScrollBtn);
+			dispatchEvent(new Event('DRAG'));
 		}
 		
 		private function moveTarget(evt:Event):void 
@@ -236,6 +239,7 @@ package com.smp.components{
 			if (Math.abs(_target[_property] - getTargetPosition()) > 1) {
 				
 				setTargetPosition();
+				dispatchEvent(new Event('SCROLL'));
 			}else {
 				
 				scroller.removeEventListener(Event.ENTER_FRAME, moveTarget);
@@ -256,19 +260,19 @@ package com.smp.components{
 		{
 			var bkgLoc = new Point();
 			if (_property == "y") {
-				bkgLoc[_property] = evt.localY;
+				bkgLoc[_property] = (evt.currentTarget as DisplayObject).mouseY;
 			}else {
-				bkgLoc[_property] = evt.localX;
+				bkgLoc[_property] = (evt.currentTarget as DisplayObject).mouseX;
 			}
 			
 			if (bkgLoc[_property] < scrollBounds[_propertyLength]) {
 				_destinationScrollPosition = bkgLoc[_property];
-				trace("_destinationScrollPosition a "+_destinationScrollPosition)
+				
 			} else {
 				_destinationScrollPosition = scrollBounds[_propertyLength];
-				trace("_destinationScrollPosition b "+_destinationScrollPosition)
+				
 			}
-			trace("_destinationScrollPosition "+_destinationScrollPosition)
+			
 			scroller.addEventListener(Event.ENTER_FRAME, moveScrollBtn, false, 0, true);
 		}
 		
