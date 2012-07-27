@@ -43,7 +43,7 @@ package com.smp.components{
 		private var _frameInitY:Number;
 		private var _targetInitY:Number;
 		private var _targetInitHeight:Number;
-		
+		private var _onWheel:Boolean;
 		private var _timer:Timer = new Timer(10);;
 		private var _elasticityTimer:Timer = new Timer(10);
 		
@@ -71,7 +71,8 @@ package com.smp.components{
 			
 			this.scrollBtn = scrollBtn;
 			this.scrollBkg = scrollBkg;
-			this.scrollLength = scrollLength;	
+			this.scrollLength = scrollLength;
+			_onWheel = onwheel;
 			
 			if(scrollBtn.parent != null){
 				if((scrollBtn.parent as MovieClip) != null){
@@ -153,7 +154,7 @@ package com.smp.components{
 				_timer.addEventListener(TimerEvent.TIMER, onTimer, false, 0, true);
 				_timer.start();
 				
-				if (onwheel)
+				if (_onWheel)
 				{	
 					stage.addEventListener(MouseEvent.MOUSE_WHEEL, onWheel);
 				}
@@ -203,7 +204,10 @@ package com.smp.components{
 			
 			if (_target[_propertyLength] > scrollLength) {
 				scroller.visible = true;
-				stage.addEventListener(MouseEvent.MOUSE_WHEEL, onWheel);
+				if (_onWheel)
+				{	
+					stage.addEventListener(MouseEvent.MOUSE_WHEEL, onWheel);
+				}
 				return true;
 			} else {
 				scroller.visible = false;
